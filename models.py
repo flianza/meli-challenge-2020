@@ -35,7 +35,7 @@ class AbstractBaseline(object):
         pass
     
     def _fill_missing_values(self, row, recommendation):
-        recommendation = drop_duplicates(recommendation)
+        recommendation = drop_duplicates(recommendation)[:10]
         
         missing_items = self.k - len(recommendation)
         fill_items = []
@@ -64,19 +64,20 @@ class LastViewedBaseline(AbstractBaseline):
         return recommendation
 
 class TopViewedItemsByMostFrequentDomainBaseline(AbstractBaseline):
-    def __init__(self, all_items, metadata, fill_model=None, k=10, max_views=15, verbose=True):
+    def __init__(self, all_items, metadata, fill_model=None, k=10, max_views=30, verbose=True):
         super().__init__(all_items, fill_model=fill_model, k=k, verbose=verbose)
         self.max_views = max_views
         self.metadata = metadata
+        self.viewed_items_by_domain = None
     
     def _fit(self, X=None, y=None):
-        self.sold_items_by_domain = defaultdict(lambda: defaultdict(int))
+        self.viewed_items_by_domain = defaultdict(lambda: defaultdict(int))
 
         for row in tqdm(X):
             viewed = [ev['event_info'] for ev in row['user_history'] if ev['event_type'] == 'view']
             for item in viewed:
                 domain = self.metadata[item]['domain_id']
-                self.sold_items_by_domain[domain][item] += 1
+                self.viewed_items_by_domain[domain][item] += 1
                 
         return self
     
@@ -99,7 +100,7 @@ class TopViewedItemsByMostFrequentDomainBaseline(AbstractBaseline):
         return domains
     
     def __top_items(self, domain):
-        top = self.sold_items_by_domain[domain]
+        top = self.viewed_items_by_domain[domain]
         top = Counter(top)
         top = top.most_common(self.k)
         recommendation = [x[0] for x in top]
