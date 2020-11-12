@@ -84,7 +84,7 @@ class TopViewedItemsByMostFrequentDomainBaseline(AbstractBaseline):
     def _predict_one(self, row):
         viewed = [ev['event_info'] for ev in row['user_history'] if ev['event_type'] == 'view']
         if len(viewed) == 0:
-            return random.choices(self.all_items, k=self.k)
+            return []
         domain = self.__visited_domains(row)
         domain = domain.most_common(1)[0][0]
         return self.__top_items(domain)
