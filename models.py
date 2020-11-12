@@ -32,7 +32,7 @@ class AbstractBaseline(object):
         return y_pred
     
     def _predict_one(self, row):
-        pass
+        return []
     
     def _fill_missing_values(self, row, recommendation):
         recommendation = drop_duplicates(recommendation)[:10]
@@ -85,15 +85,15 @@ class TopViewedItemsByMostFrequentDomainBaseline(AbstractBaseline):
         viewed = [ev['event_info'] for ev in row['user_history'] if ev['event_type'] == 'view']
         if len(viewed) == 0:
             return []
-        domain = self.__visited_domains(row)
+        domain = self.__visited_domains(row, viewed)
         domain = domain.most_common(1)[0][0]
         return self.__top_items(domain)
     
-    def __visited_domains(self, row):
-        domains = Counter()
-        viewed = [ev['event_info'] for ev in row['user_history'] if ev['event_type'] == 'view']
+    def __visited_domains(self, row, viewed):
         if len(viewed) > self.max_views:
             viewed = viewed[:self.max_views]
+
+        domains = Counter()
         for item in viewed:
             domain = self.metadata[item]['domain_id']
             domains[domain] += 1
