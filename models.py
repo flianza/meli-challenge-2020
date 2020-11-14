@@ -106,3 +106,46 @@ class TopViewedItemsByMostFrequentDomainBaseline(AbstractBaseline):
         recommendation = [x[0] for x in top]
         
         return recommendation
+
+class TopSoldItemsByMostFrequentDomainBaseline(AbstractBaseline):
+    def __init__(self, all_items, metadata, fill_model=None, k=10, max_views=30, verbose=True):
+        super().__init__(all_items, fill_model=fill_model, k=k, verbose=verbose)
+        self.max_views = max_views
+        self.metadata = metadata
+        self.sold_items_by_domain = None
+    
+    def _fit(self, X=None, y=None):
+        self.sold_items_by_domain = defaultdict(lambda: defaultdict(int))
+
+        for row in tqdm(X):
+            item = row['item_bought']
+            domain = self.metadata[item]['domain_id']
+            self.sold_items_by_domain[domain][item] += 1
+                
+        return self
+    
+    def _predict_one(self, row):
+        viewed = [ev['event_info'] for ev in row['user_history'] if ev['event_type'] == 'view']
+        if len(viewed) == 0:
+            return []
+        domain = self.__visited_domains(row, viewed)
+        domain = domain.most_common(1)[0][0]
+        return self.__top_items(domain)
+    
+    def __visited_domains(self, row, viewed):
+        if len(viewed) > self.max_views:
+            viewed = viewed[:self.max_views]
+
+        domains = Counter()
+        for item in viewed:
+            domain = self.metadata[item]['domain_id']
+            domains[domain] += 1
+        return domains
+    
+    def __top_items(self, domain):
+        top = self.sold_items_by_domain[domain]
+        top = Counter(top)
+        top = top.most_common(self.k)
+        recommendation = [x[0] for x in top]
+        
+        return recommendation

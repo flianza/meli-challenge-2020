@@ -20,22 +20,19 @@ all_items = list(metadata.keys())
 y_true = [row['item_bought'] for row in tqdm(rows_test)]
 y_full_true = [row['item_bought'] for row in tqdm(rows)]
 
-sold_items_ids = {row['item_bought'] for row in tqdm(rows)}
-sold_prices = [float(metadata[item_id]['price'] if metadata[item_id]['price'] is not None else 99999) for item_id in tqdm(sold_items_ids)]
+#sold_items_ids = {row['item_bought'] for row in tqdm(rows)}
+#sold_prices = [float(metadata[item_id]['price'] if metadata[item_id]['price'] is not None else 99999) for item_id in tqdm(sold_items_ids)]
 
-from models import TopViewedItemsByMostFrequentDomainBaseline, LastViewedBaseline
-from order_models import PriceBasedOrder
+from models import TopViewedItemsByMostFrequentDomainBaseline, TopSoldItemsByMostFrequentDomainBaseline, LastViewedBaseline
 
-fill_model = TopViewedItemsByMostFrequentDomainBaseline(all_items, metadata, verbose=False)
-baseline = LastViewedBaseline(all_items, fill_model=fill_model)
-order = PriceBasedOrder(metadata, sold_prices)
-
+baseline = TopViewedItemsByMostFrequentDomainBaseline(all_items, metadata, verbose=False)
+baseline = TopSoldItemsByMostFrequentDomainBaseline(all_items, metadata, fill_model=baseline, verbose=False)
+baseline = LastViewedBaseline(all_items, fill_model=baseline)
 baseline.fit(rows)
 y_pred = baseline.predict(test_dataset)
-y_pred_ordered = order.predict(y_pred)
 
-import pandas as pd
-df = pd.DataFrame(data=y_pred)
-df.to_csv("./results/not_ordered.csv",sep=',',index=False,header=False)
-df = pd.DataFrame(data=y_pred_ordered)
-df.to_csv("./results/ordered.csv",sep=',',index=False,header=False)
+#from metrics import ndcg
+#print(ndcg(y_pred, y_true, metadata))
+
+from utils import export_results
+export_results(y_pred)
