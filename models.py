@@ -1,7 +1,7 @@
 import math
 import random
 from collections import Counter, defaultdict
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 from utils import drop_duplicates
 
 class AbstractBaseline(object):
